@@ -24,7 +24,7 @@
 /**
  * @brief Starting the server.
  * 
- * @param port Port for the listening socket.
+ * @param port Port for the listening socket (host order).
  * @return EXIT_SUCCESS or EXIT_FAILURE.
  * 
  * @note It calls perror before returning an error.
