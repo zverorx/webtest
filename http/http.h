@@ -18,26 +18,31 @@
  * along with webtest. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
+#ifndef HTTP_H_SENTRY
+#define HTTP_H_SENTRY
 
-#include "core/webtest_core.h"
-#include "common/common.h"
+/**
+ * 
+ */
+typedef struct request_start_line {
+	char *method;
+	char *path;
+	char *version;
+} stline_t;
 
-int main(int argc, char **argv)
-{
-	enum { port_i = 1 }; /* index of port in argv */
-	unsigned int port;
+/**
+ *
+ */
+int http_parse(const char *request, stline_t *stline);
 
-	if (argc != 2) {
-		fputs("Usage: webtest <listen_port>\n", stderr);
-		return EXIT_FAILURE;
-	}
+/**
+ * 
+ */
+char *httpget(void);
 
-	if (!str_to_uint(argv[port_i], &port)) {
-		fputs("Invalid port\n", stderr);
-		return EXIT_FAILURE;
-	}
+/**
+ * 
+ */
+char *not_implemented_stat(void);
 
-	return start(port);
-}
+#endif /* HTTP_H_SENTRY */

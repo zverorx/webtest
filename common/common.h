@@ -18,26 +18,40 @@
  * along with webtest. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#ifndef COMMON_H_SENTRY
+#define COMMON_H_SENTRY
+
 #include <stdio.h>
-#include <stdlib.h>
 
-#include "core/webtest_core.h"
-#include "common/common.h"
+/**
+ * 
+ */
+#define CHECK(FUNCNAME, FUNCRES, ERROR_HANDLER)	\
+	do {										\
+		if (FUNCRES == -1) {					\
+			perror(FUNCNAME);					\
+			goto ERROR_HANDLER;					\
+		}										\
+	} while(0)
 
-int main(int argc, char **argv)
-{
-	enum { port_i = 1 }; /* index of port in argv */
-	unsigned int port;
+/**
+ * 
+ */
+void free_all(int count, void *ptr1, ...);
 
-	if (argc != 2) {
-		fputs("Usage: webtest <listen_port>\n", stderr);
-		return EXIT_FAILURE;
-	}
+/**
+ * 
+ */
+void close_all(int count, int fd1, ...);
 
-	if (!str_to_uint(argv[port_i], &port)) {
-		fputs("Invalid port\n", stderr);
-		return EXIT_FAILURE;
-	}
+/**
+ * @brief Converting a string to an unsigned integer.
+ * 
+ * @param str String representation of a number.
+ * @param[out] num Conversion result.
+ * 
+ * @return 1 if success, 0 otherwise (num = 0).
+ */
+int str_to_uint(const char *str, unsigned int *num);
 
-	return start(port);
-}
+#endif /* COMMON_H_SENTRY */

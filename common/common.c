@@ -18,26 +18,58 @@
  * along with webtest. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <stdarg.h>
 
-#include "core/webtest_core.h"
-#include "common/common.h"
-
-int main(int argc, char **argv)
+void free_all(int count, void *ptr1, ...)
 {
-	enum { port_i = 1 }; /* index of port in argv */
-	unsigned int port;
+	void *tmp_ptr;
+	va_list args;
 
-	if (argc != 2) {
-		fputs("Usage: webtest <listen_port>\n", stderr);
-		return EXIT_FAILURE;
+	va_start(args, ptr1);
+
+	free(ptr1);
+
+	for (int i = 1; i < count; i++) {
+		tmp_ptr = va_arg(args, void *);
+		free(tmp_ptr);
 	}
 
-	if (!str_to_uint(argv[port_i], &port)) {
-		fputs("Invalid port\n", stderr);
-		return EXIT_FAILURE;
+	va_end(args);
+}
+
+void close_all(int count, int fd1, ...)
+{
+	int tmp_fd;
+	va_list args;
+
+	va_start(args, fd1);
+
+	if (fd1 != -1) { close(fd1); }
+
+	for (int i = 1; i < count; i++) {
+		tmp_fd = va_arg(args, int);
+		if (tmp_fd != -1) { close(tmp_fd); }
 	}
 
-	return start(port);
+	va_end(args);
+}
+
+int str_to_uint(const char *str, unsigned int *num)
+{
+	char *endptr = NULL;
+
+	if (!str || !num) { return 0; }
+
+	errno = 0;
+
+	*num = strtol(str, &endptr, 10);
+	if (errno == ERANGE || *endptr != '\0' || num < 0)
+	{
+		return 0;
+	}
+
+	return 1;
 }

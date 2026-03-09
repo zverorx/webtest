@@ -20,28 +20,14 @@
 
 #include <stdlib.h>
 #include <unistd.h>
-#include <stdio.h>
 #include <string.h>
-#include <stdarg.h>
 #include <netinet/in.h>
 
-#include "webtest.h"
+#include "webtest_core.h"
+#include "../http/http.h"
+#include "../common/common.h"
 
 #define REQUEST_SIZE	1025 
-
-#define CHECK(FUNCNAME, FUNCRES, ERROR_HANDLER)	\
-	do {										\
-		if (FUNCRES == -1) {					\
-			perror(FUNCNAME);					\
-			goto ERROR_HANDLER;					\
-		}										\
-	} while(0)
-
-typedef struct request_start_line {
-	char *method;
-	char *path;
-	char *version;
-} stline_t;
 
 /**
  * @see create_listen_socket
@@ -59,12 +45,6 @@ enum error_t { socket_err, bind_err, listen_err };
  * @return fd if success, -1 otherwise.
  */
 static int create_listen_socket(unsigned int port, enum error_t *err);
-
-static int http_parse(const char *request, stline_t *stline);
-static char *httpget(void);
-static char *not_implemented_stat(void);
-static void free_all(int count, void *ptr1, ...);
-static void close_all(int count, int fd1, ...);
 
 int start(unsigned int port)
 {
@@ -156,116 +136,4 @@ static int create_listen_socket(unsigned int port, enum error_t *err)
 	handle_error:
 		if (lsock != -1) { close(lsock); }
 		return -1;
-}
-
-static int http_parse(const char *request, stline_t *stline)
-{
-	enum { buff_size = 256 };
-	enum part { method, path, version};
-
-	char buff[buff_size];
-	int part = 0;
-
-	if (!stline || !request) { return -1; }
-
-	stline->method = NULL;
-	stline->path = NULL;
-	stline->version = NULL;
-
-	for (int buff_i = 0, req_i = 0; 
-		 buff_i < buff_size - 1 && request[req_i] != '\0';
-		 buff_i++, req_i++) {
-		if (request[req_i] == ' '  ||
-			request[req_i] == '\n' ||
-			request[req_i] == '\r') {
-
-			if (buff_i == 0) { goto handle_error; }
-			buff[buff_i] = '\0';
-
-			switch (part) {
-				case method:
-					stline->method = strdup(buff);
-					if (!stline->method) { goto handle_error; }
-					break;
-				case path:
-					stline->path = strdup(buff);
-					if (!stline->path) { goto handle_error; }
-					break;
-				case version:
-					stline->version = strdup(buff);
-					if (!stline->version) { goto handle_error; }
-
-				return 0;
-			}
-
-			while (request[req_i + 1] == ' ') { req_i++; }
-
-			part++;
-			buff_i = -1;
-			continue;
-		}
-
-		buff[buff_i] = request[req_i];
-	}
-
-	handle_error:
-		free(stline->method);
-		free(stline->path);
-		free(stline->version);
-		stline->method = NULL;
-		stline->path = NULL;
-		stline->version = NULL;
-		return -1;
-}
-
-static char *httpget(void)
-{
-	size_t msg_size = sizeof("HTTP/1.1 200 OK\n\0");
-	char *msg = calloc(1, msg_size);
-	memcpy(msg, "HTTP/1.1 200 OK\n\0", msg_size);
-
-    return msg;
-}
-
-static char *not_implemented_stat(void)
-{
-	size_t msg_size = sizeof("HTTP/1.1 501 Not Implemented\n\0");
-	char *msg = calloc(1, msg_size);
-	memcpy(msg, "HTTP/1.1 501 Not Implemented\n\0", msg_size);
-
-    return msg;
-}
-
-static void free_all(int count, void *ptr1, ...)
-{
-	void *tmp_ptr;
-	va_list args;
-
-	va_start(args, ptr1);
-
-	free(ptr1);
-
-	for (int i = 1; i < count; i++) {
-		tmp_ptr = va_arg(args, void *);
-		free(tmp_ptr);
-	}
-
-	va_end(args);
-}
-
-static void close_all(int count, int fd1, ...)
-{
-	int tmp_fd;
-	va_list args;
-
-	va_start(args, fd1);
-
-	if (fd1 != -1) { close(fd1); }
-
-	for (int i = 1; i < count; i++) {
-		tmp_fd = va_arg(args, int);
-		if (tmp_fd != -1) { close(tmp_fd); }
-	}
-
-	va_end(args);
 }
