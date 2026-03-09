@@ -36,15 +36,16 @@
 		}										\
 	} while(0)
 
+typedef struct request_start_line {
+	char *method;
+	char *path;
+	char *version;
+} stline_t;
+
 /**
  * @see create_listen_socket
  */
 enum error_t { socket_err, bind_err, listen_err };
-
-/**
- * @see http_method
- */
-enum method { get_m, post_m, put_m, delete_m, other_m };
 
 /**
  * @brief Creating a listening socket.
@@ -58,7 +59,7 @@ enum method { get_m, post_m, put_m, delete_m, other_m };
  */
 static int create_listen_socket(unsigned int port, enum error_t *err);
 
-static enum method http_method(const char *request);
+static int http_parse(const char *request, stline_t *stline);
 static char *httpget(void);
 static char *not_implemented_stat(void);
 static void free_all(int fd1, int fd2, void *ptr1, void *ptr2);
@@ -68,11 +69,13 @@ int start(unsigned int port)
 	int lsock, sfd = -1, res;
 	struct sockaddr_in client_addr;
 	socklen_t client_len = sizeof(client_addr);
+	stline_t start_line;
 	enum error_t err;
 
 	enum { read_i, write_i };
 	char *buff[2];
 	memset(buff, 0, sizeof(buff));
+	memset(&start_line, 0, sizeof(start_line));
 
 	lsock = create_listen_socket(port, &err);
 	if (lsock == -1) {
@@ -92,23 +95,27 @@ int start(unsigned int port)
 		CHECK("read", res, handle_error);
 		buff[read_i][res] = '\0';
 
-		res = http_method(buff[read_i]);
-		switch (res) {
-			case get_m: buff[write_i] = httpget(); break;
-			default: buff[write_i] = not_implemented_stat(); break;
-		}
+		http_parse(buff[read_i], &start_line);
+		if (!strcmp(start_line.method, "GET")) { buff[write_i] = httpget(); }
+		else { buff[write_i] = not_implemented_stat(); }
 
 		res = write(sfd, buff[write_i], 64);
 		CHECK("write", res, handle_error);
 
 		free_all(sfd, -1, buff[read_i], buff[write_i]);
+		free_all(-1, -1, start_line.method, start_line.path);
+		free_all(-1, -1, start_line.version, NULL);
 	}
 
 	free_all(lsock, sfd, buff[read_i], buff[write_i]);
+	free_all(-1, -1, start_line.method, start_line.path);
+	free_all(-1, -1, start_line.version, NULL);
 	return EXIT_SUCCESS;
 
 	handle_error:
 		free_all(lsock, sfd, buff[read_i], buff[write_i]);
+		free_all(-1, -1, start_line.method, start_line.path);
+		free_all(-1, -1, start_line.version, NULL);
 		return EXIT_FAILURE;
 }
 
@@ -149,31 +156,64 @@ static int create_listen_socket(unsigned int port, enum error_t *err)
 		return -1;
 }
 
-static enum method http_method(const char *request)
+static int http_parse(const char *request, stline_t *stline)
 {
-	if (!request) { return other_m; }
+	enum { buff_size = 256 };
+	enum part { method, path, version};
 
-	if (request[0] == 'G' && 
-		request[1] == 'E' && 
-		request[2] == 'T') { return get_m; }
+	char buff[buff_size];
+	int part = 0;
 
-	if (request[0] == 'P' && 
-		request[1] == 'O' && 
-		request[2] == 'S' && 
-		request[3] == 'T') { return post_m; }
+	if (!stline || !request) { return -1; }
 
-	if (request[0] == 'P' && 
-		request[1] == 'U' && 
-		request[2] == 'T') { return put_m; }
+	stline->method = NULL;
+	stline->path = NULL;
+	stline->version = NULL;
 
-	if (request[0] == 'D' && 
-		request[1] == 'E' && 
-		request[2] == 'L' && 
-		request[3] == 'E' && 
-		request[4] == 'T' && 
-		request[5] == 'E') { return delete_m; }
+	for (int buff_i = 0, req_i = 0; 
+		 buff_i < buff_size - 1 && request[req_i] != '\0';
+		 buff_i++, req_i++) {
+		if (request[req_i] == ' '  ||
+			request[req_i] == '\n' ||
+			request[req_i] == '\r') {
 
-	return other_m;
+			if (buff_i == 0) { goto handle_error; }
+			buff[buff_i] = '\0';
+
+			switch (part) {
+				case method:
+					stline->method = strdup(buff);
+					if (!stline->method) { goto handle_error; }
+					break;
+				case path:
+					stline->path = strdup(buff);
+					if (!stline->path) { goto handle_error; }
+					break;
+				case version:
+					stline->version = strdup(buff);
+					if (!stline->version) { goto handle_error; }
+
+				return 0;
+			}
+
+			while (request[req_i + 1] == ' ') { req_i++; }
+
+			part++;
+			buff_i = -1;
+			continue;
+		}
+
+		buff[buff_i] = request[req_i];
+	}
+
+	handle_error:
+		free(stline->method);
+		free(stline->path);
+		free(stline->version);
+		stline->method = NULL;
+		stline->path = NULL;
+		stline->version = NULL;
+		return -1;
 }
 
 static char *httpget(void)
