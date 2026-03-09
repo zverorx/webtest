@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 #include <netinet/in.h>
 
 #include "webtest.h"
@@ -62,7 +63,8 @@ static int create_listen_socket(unsigned int port, enum error_t *err);
 static int http_parse(const char *request, stline_t *stline);
 static char *httpget(void);
 static char *not_implemented_stat(void);
-static void free_all(int fd1, int fd2, void *ptr1, void *ptr2);
+static void free_all(int count, void *ptr1, ...);
+static void close_all(int count, int fd1, ...);
 
 int start(unsigned int port)
 {
@@ -102,20 +104,20 @@ int start(unsigned int port)
 		res = write(sfd, buff[write_i], 64);
 		CHECK("write", res, handle_error);
 
-		free_all(sfd, -1, buff[read_i], buff[write_i]);
-		free_all(-1, -1, start_line.method, start_line.path);
-		free_all(-1, -1, start_line.version, NULL);
+		close_all(1, sfd);
+		free_all(5, buff[read_i], buff[write_i], start_line.method, 
+		     	 start_line.path, start_line.version);
 	}
 
-	free_all(lsock, sfd, buff[read_i], buff[write_i]);
-	free_all(-1, -1, start_line.method, start_line.path);
-	free_all(-1, -1, start_line.version, NULL);
+	free_all(5, buff[read_i], buff[write_i], start_line.method, 
+		     start_line.path, start_line.version);
+	close_all(2, lsock, sfd);
 	return EXIT_SUCCESS;
 
 	handle_error:
-		free_all(lsock, sfd, buff[read_i], buff[write_i]);
-		free_all(-1, -1, start_line.method, start_line.path);
-		free_all(-1, -1, start_line.version, NULL);
+		free_all(5, buff[read_i], buff[write_i], start_line.method,
+			     start_line.path, start_line.version);
+		close_all(2, lsock, sfd);
 		return EXIT_FAILURE;
 }
 
@@ -234,11 +236,36 @@ static char *not_implemented_stat(void)
     return msg;
 }
 
-static void free_all(int fd1, int fd2, void *ptr1, void *ptr2)
+static void free_all(int count, void *ptr1, ...)
 {
+	void *tmp_ptr;
+	va_list args;
+
+	va_start(args, ptr1);
+
+	free(ptr1);
+
+	for (int i = 1; i < count; i++) {
+		tmp_ptr = va_arg(args, void *);
+		free(tmp_ptr);
+	}
+
+	va_end(args);
+}
+
+static void close_all(int count, int fd1, ...)
+{
+	int tmp_fd;
+	va_list args;
+
+	va_start(args, fd1);
+
 	if (fd1 != -1) { close(fd1); }
-	if (fd2 != -1) { close(fd2); }
-	
-	if (ptr1) { free(ptr1); ptr1 = NULL; }
-	if (ptr2) { free(ptr2); ptr2 = NULL; }
+
+	for (int i = 1; i < count; i++) {
+		tmp_fd = va_arg(args, int);
+		if (tmp_fd != -1) { close(tmp_fd); }
+	}
+
+	va_end(args);
 }
