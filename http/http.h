@@ -43,6 +43,6 @@ char *httpget(void);
 /**
  * 
  */
-char *not_implemented_stat(void);
+int send_code_stat(int sockfd, int code);
 
 #endif /* HTTP_H_SENTRY */

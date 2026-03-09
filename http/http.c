@@ -19,6 +19,7 @@
  */
 
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 
 #include "http.h"
@@ -31,7 +32,7 @@ int http_parse(const char *request, stline_t *stline)
 	char buff[buff_size];
 	int part = 0;
 
-	if (!stline || !request) { return -1; }
+	if (!stline || !request) { return 0; }
 
 	stline->method = NULL;
 	stline->path = NULL;
@@ -60,7 +61,7 @@ int http_parse(const char *request, stline_t *stline)
 					stline->version = strdup(buff);
 					if (!stline->version) { goto handle_error; }
 
-				return 0;
+				return 1;
 			}
 
 			while (request[req_i + 1] == ' ') { req_i++; }
@@ -80,23 +81,32 @@ int http_parse(const char *request, stline_t *stline)
 		stline->method = NULL;
 		stline->path = NULL;
 		stline->version = NULL;
-		return -1;
+		return 0;
 }
 
 char *httpget(void)
 {
-	size_t msg_size = sizeof("HTTP/1.1 200 OK\n\0");
-	char *msg = calloc(1, msg_size);
-	memcpy(msg, "HTTP/1.1 200 OK\n\0", msg_size);
-
-    return msg;
+	return NULL;
 }
 
-char *not_implemented_stat(void)
+int send_code_stat(int sockfd, int code)
 {
-	size_t msg_size = sizeof("HTTP/1.1 501 Not Implemented\n\0");
-	char *msg = calloc(1, msg_size);
-	memcpy(msg, "HTTP/1.1 501 Not Implemented\n\0", msg_size);
+	int res = -2;
 
-    return msg;
+	switch (code) {
+		case 200:
+			res = write(sockfd, "HTTP/1.1 200 OK\r\n", 
+						sizeof("HTTP/1.1 200 OK\r\n"));
+			break;
+		case 404:
+			res = write(sockfd, "HTTP/1.1 404 Not Found\r\n", 
+						sizeof("HTTP/1.1 404 Not Found\r\n"));
+			break;
+		case 501:
+			res = write(sockfd, "HTTP/1.1 501 Not Implemented\r\n", 
+						sizeof("HTTP/1.1 501 Not Implemented\r\n"));
+			break;
+	}
+
+	return res;
 }

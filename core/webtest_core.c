@@ -53,10 +53,8 @@ int start(unsigned int port)
 	socklen_t client_len = sizeof(client_addr);
 	stline_t start_line;
 	enum error_t err;
+	char *read_buff = NULL;
 
-	enum { read_i, write_i };
-	char *buff[2];
-	memset(buff, 0, sizeof(buff));
 	memset(&start_line, 0, sizeof(start_line));
 
 	lsock = create_listen_socket(port, &err);
@@ -70,32 +68,29 @@ int start(unsigned int port)
 		sfd = accept(lsock, (struct sockaddr *) &client_addr, &client_len);
 		CHECK("accept", sfd, handle_error);
 
-		buff[read_i] = calloc(REQUEST_SIZE, sizeof(char));
-		if (!buff[read_i]) { CHECK("calloc", -1, handle_error); }
+		read_buff = calloc(REQUEST_SIZE, sizeof(char));
+		if (!read_buff) { CHECK("calloc", -1, handle_error); }
 
-		res = read(sfd, buff[read_i], REQUEST_SIZE - 1);
+		res = read(sfd, read_buff, REQUEST_SIZE - 1);
 		CHECK("read", res, handle_error);
-		buff[read_i][res] = '\0';
+		read_buff[res] = '\0';
 
-		http_parse(buff[read_i], &start_line);
-		if (!strcmp(start_line.method, "GET")) { buff[write_i] = httpget(); }
-		else { buff[write_i] = not_implemented_stat(); }
-
-		res = write(sfd, buff[write_i], 64);
-		CHECK("write", res, handle_error);
+		http_parse(read_buff, &start_line);
+		if (!strcmp(start_line.method, "GET")) { send_code_stat(sfd, 200); }
+		else { send_code_stat(sfd, 501); }
 
 		close_all(1, sfd);
-		free_all(5, buff[read_i], buff[write_i], start_line.method, 
+		free_all(4, read_buff, start_line.method, 
 		     	 start_line.path, start_line.version);
 	}
 
-	free_all(5, buff[read_i], buff[write_i], start_line.method, 
+	free_all(4, read_buff, start_line.method, 
 		     start_line.path, start_line.version);
 	close_all(2, lsock, sfd);
 	return EXIT_SUCCESS;
 
 	handle_error:
-		free_all(5, buff[read_i], buff[write_i], start_line.method,
+		free_all(5, read_buff, start_line.method,
 			     start_line.path, start_line.version);
 		close_all(2, lsock, sfd);
 		return EXIT_FAILURE;
