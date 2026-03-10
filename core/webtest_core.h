@@ -25,10 +25,8 @@
  * @brief Starting the server.
  * 
  * @param port Port for the listening socket (host order).
- * @return EXIT_SUCCESS or EXIT_FAILURE.
- * 
- * @note It calls perror before returning an error.
+ * @note It calls perror.
  */
-int start(unsigned int port);
+void start(unsigned int port);
 
 #endif /* WEBTEST_H_SENTRY */

@@ -46,7 +46,7 @@ enum error_t { socket_err, bind_err, listen_err };
  */
 static int create_listen_socket(unsigned int port, enum error_t *err);
 
-int start(unsigned int port)
+void start(unsigned int port)
 {
 	int lsock, sfd = -1, res;
 	struct sockaddr_in client_addr;
@@ -55,47 +55,37 @@ int start(unsigned int port)
 	enum error_t err;
 	char *read_buff = NULL;
 
-	memset(&start_line, 0, sizeof(start_line));
-
 	lsock = create_listen_socket(port, &err);
 	if (lsock == -1) {
-		if (err == socket_err) { CHECK("socket", -1, handle_error); }
-		if (err == bind_err)   { CHECK("bind",   -1, handle_error); }
-		if (err == listen_err) { CHECK("listen", -1, handle_error); }
+		if (err == socket_err) { perror("socket"); return; }
+		if (err == bind_err)   { perror("bind");   return; }
+		if (err == listen_err) { perror("listen"); return; }
 	}
 
 	for (;;) {
 		sfd = accept(lsock, (struct sockaddr *) &client_addr, &client_len);
-		CHECK("accept", sfd, handle_error);
+		CHECK("accept", sfd, cleanup);
 
 		read_buff = calloc(REQUEST_SIZE, sizeof(char));
-		if (!read_buff) { CHECK("calloc", -1, handle_error); }
+		if (!read_buff) { CHECK("calloc", -1, cleanup); }
 
 		res = read(sfd, read_buff, REQUEST_SIZE - 1);
-		CHECK("read", res, handle_error);
+		CHECK("read", res, cleanup);
 		read_buff[res] = '\0';
 
 		if (http_parse(read_buff, &start_line)) {
 			if (!strcmp(start_line.method, "GET")) {
-				if (httpget(sfd, start_line.path) == -1)
-				{
-					goto handle_error;
-				}
+				httpget(sfd, start_line.path);
 			}
 			else { send_code_stat(sfd, 501); }
 		}
 		else { send_code_stat(sfd, 400); }
 
+cleanup:
 		close_all(1, sfd);
 		free_all(4, read_buff, start_line.method, 
 		     	 start_line.path, start_line.version);
 	}
-
-	handle_error:
-		free_all(4, read_buff, start_line.method,
-			     start_line.path, start_line.version);
-		close_all(2, lsock, sfd);
-		return EXIT_FAILURE;
 }
 
 static int create_listen_socket(unsigned int port, enum error_t *err)
