@@ -84,11 +84,6 @@ int http_parse(const char *request, stline_t *stline)
 		return 0;
 }
 
-char *httpget(void)
-{
-	return NULL;
-}
-
 int send_code_stat(int sockfd, int code)
 {
 	int res = -2;
@@ -109,4 +104,9 @@ int send_code_stat(int sockfd, int code)
 	}
 
 	return res;
+}
+
+char *httpget(void)
+{
+	return NULL;
 }

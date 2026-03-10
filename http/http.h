@@ -22,7 +22,8 @@
 #define HTTP_H_SENTRY
 
 /**
- * 
+ * @struct request_start_line
+ * @brief Represents the starting line of an HTTP request.
  */
 typedef struct request_start_line {
 	char *method;
@@ -31,18 +32,28 @@ typedef struct request_start_line {
 } stline_t;
 
 /**
- *
+ * @brief Parsing the start line of an HTTP request.
+ * 
+ * @param request Request from client.
+ * @param[out] stline Start line store.
+ * @return 1 if success, 0 otherwise.
  */
 int http_parse(const char *request, stline_t *stline);
+
+/**
+ * @brief Sending status code to the client.
+ * 
+ * @param sockfd Write socket.
+ * @param code Status code.
+ * @return Writing result or -2 if the message for the code is not implemented.
+ * 
+ * @note Support codes: 200, 404, 501.
+ */
+int send_code_stat(int sockfd, int code);
 
 /**
  * 
  */
 char *httpget(void);
-
-/**
- * 
- */
-int send_code_stat(int sockfd, int code);
 
 #endif /* HTTP_H_SENTRY */

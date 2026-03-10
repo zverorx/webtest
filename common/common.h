@@ -24,7 +24,12 @@
 #include <stdio.h>
 
 /**
+ * @def CHECK
+ * @brief Checking the function's result.
  * 
+ * @param FUNCNAME Name of function (for perror).
+ * @param FUNCRES Function result.
+ * @param ERROR_HANDLER If FUNCRES is -1, then jump to it.
  */
 #define CHECK(FUNCNAME, FUNCRES, ERROR_HANDLER)	\
 	do {										\
@@ -35,12 +40,18 @@
 	} while(0)
 
 /**
+ * @brief Freeing pointers.
  * 
+ * @param count Count of pointers.
+ * @param ptr1 First pointer.
  */
 void free_all(int count, void *ptr1, ...);
 
 /**
+ * @brief Closing file descriptors.
  * 
+ * @param count Count of file descriptors.
+ * @param fd1 First file descriptor.
  */
 void close_all(int count, int fd1, ...);
 
