@@ -90,7 +90,7 @@ int start(unsigned int port)
 	return EXIT_SUCCESS;
 
 	handle_error:
-		free_all(5, read_buff, start_line.method,
+		free_all(4, read_buff, start_line.method,
 			     start_line.path, start_line.version);
 		close_all(2, lsock, sfd);
 		return EXIT_FAILURE;
