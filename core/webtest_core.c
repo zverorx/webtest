@@ -75,19 +75,16 @@ int start(unsigned int port)
 		CHECK("read", res, handle_error);
 		read_buff[res] = '\0';
 
-		http_parse(read_buff, &start_line);
-		if (!strcmp(start_line.method, "GET")) { send_code_stat(sfd, 200); }
-		else { send_code_stat(sfd, 501); }
+		if (http_parse(read_buff, &start_line)) {
+			if (!strcmp(start_line.method, "GET")) { send_code_stat(sfd, 200); }
+			else { send_code_stat(sfd, 501); }
+		}
+		else { send_code_stat(sfd, 400); }
 
 		close_all(1, sfd);
 		free_all(4, read_buff, start_line.method, 
 		     	 start_line.path, start_line.version);
 	}
-
-	free_all(4, read_buff, start_line.method, 
-		     start_line.path, start_line.version);
-	close_all(2, lsock, sfd);
-	return EXIT_SUCCESS;
 
 	handle_error:
 		free_all(4, read_buff, start_line.method,

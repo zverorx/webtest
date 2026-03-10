@@ -47,7 +47,7 @@ int http_parse(const char *request, stline_t *stline);
  * @param code Status code.
  * @return Writing result or -2 if the message for the code is not implemented.
  * 
- * @note Support codes: 200, 404, 501.
+ * @note Support codes: 200, 400, 404, 501.
  */
 int send_code_stat(int sockfd, int code);
 

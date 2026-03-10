@@ -93,6 +93,10 @@ int send_code_stat(int sockfd, int code)
 			res = write(sockfd, "HTTP/1.1 200 OK\r\n", 
 						sizeof("HTTP/1.1 200 OK\r\n"));
 			break;
+		case 400:
+			res = write(sockfd, "HTTP/1.1 400 Bad Request\r\n", 
+						sizeof("HTTP/1.1 400 Bad Request\r\n"));
+			break;
 		case 404:
 			res = write(sockfd, "HTTP/1.1 404 Not Found\r\n", 
 						sizeof("HTTP/1.1 404 Not Found\r\n"));
