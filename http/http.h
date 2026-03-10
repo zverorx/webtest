@@ -52,8 +52,18 @@ int http_parse(const char *request, stline_t *stline);
 int send_code_stat(int sockfd, int code);
 
 /**
+ * @brief Sending HTTP headers to the client.
+ * 
+ * @param sockfd Write socket.
+ * @param type Content-Type value.
+ * @param len Content-Length value.
+ * @return Writing result or -2 if invalid arguments.
+ */
+int send_headers(int sockfd, const char *type, int len);
+
+/**
  * 
  */
-char *httpget(void);
+int httpget(int sockfd, const char *path);
 
 #endif /* HTTP_H_SENTRY */

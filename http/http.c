@@ -21,8 +21,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "http.h"
+#include "index.html.h"
 
 int http_parse(const char *request, stline_t *stline)
 {
@@ -110,7 +112,34 @@ int send_code_stat(int sockfd, int code)
 	return res;
 }
 
-char *httpget(void)
+int send_headers(int sockfd, const char *type, int len)
 {
-	return NULL;
+	char buff[256];
+	size_t headers_len;
+
+	if (!type || len < 0) { return -2; }
+
+	headers_len = snprintf(buff, sizeof(buff), "Content-Type: %s\r\n"
+        				   "Content-Length: %d\r\n\r\n", type, len);
+	buff[headers_len] = '\0';
+
+	return write(sockfd, buff, headers_len);
+}
+
+int httpget(int sockfd, const char *path)
+{
+	int res = -1;
+
+	res = send_code_stat(sockfd, 200);
+	if (res == -1) { return res; }
+
+	if (!strcmp(path, "/")) {
+		res = send_headers(sockfd, "text/html", strlen(INDEX_HTML));
+		if (res == -1) { return res; }
+
+		return write(sockfd, INDEX_HTML, strlen(INDEX_HTML));
+	}
+	else { /* TODO */ }
+
+	return res;
 }

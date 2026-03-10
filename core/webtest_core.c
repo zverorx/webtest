@@ -76,7 +76,12 @@ int start(unsigned int port)
 		read_buff[res] = '\0';
 
 		if (http_parse(read_buff, &start_line)) {
-			if (!strcmp(start_line.method, "GET")) { send_code_stat(sfd, 200); }
+			if (!strcmp(start_line.method, "GET")) {
+				if (httpget(sfd, start_line.path) == -1)
+				{
+					goto handle_error;
+				}
+			}
 			else { send_code_stat(sfd, 501); }
 		}
 		else { send_code_stat(sfd, 400); }
