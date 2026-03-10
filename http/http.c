@@ -93,19 +93,19 @@ int send_code_stat(int sockfd, int code)
 	switch (code) {
 		case 200:
 			res = write(sockfd, "HTTP/1.1 200 OK\r\n", 
-						sizeof("HTTP/1.1 200 OK\r\n"));
+						strlen("HTTP/1.1 200 OK\r\n"));
 			break;
 		case 400:
 			res = write(sockfd, "HTTP/1.1 400 Bad Request\r\n", 
-						sizeof("HTTP/1.1 400 Bad Request\r\n"));
+						strlen("HTTP/1.1 400 Bad Request\r\n"));
 			break;
 		case 404:
 			res = write(sockfd, "HTTP/1.1 404 Not Found\r\n", 
-						sizeof("HTTP/1.1 404 Not Found\r\n"));
+						strlen("HTTP/1.1 404 Not Found\r\n"));
 			break;
 		case 501:
 			res = write(sockfd, "HTTP/1.1 501 Not Implemented\r\n", 
-						sizeof("HTTP/1.1 501 Not Implemented\r\n"));
+						strlen("HTTP/1.1 501 Not Implemented\r\n"));
 			break;
 	}
 
