@@ -16,6 +16,11 @@ SOURCES = main.c			\
 		  webtest_core.c	\
 		  http.c			\
 		  common.c
+		  
+HEADERS = webtest_core.h	\
+		  http.h			\
+		  index.html.h		\
+		  common.h
 
 OBJECTS = $(patsubst %.c, $(OBJDIR)/%.o, $(SOURCES))
 
@@ -30,6 +35,8 @@ else
 endif
 
 all: $(TARGET)
+
+$(OBJECTS): $(HEADERS)
 
 $(TARGET): $(OBJECTS)
 	@mkdir -p $(BINDIR)
