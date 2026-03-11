@@ -27,6 +27,6 @@
  * @param port Port for the listening socket (host order).
  * @note It calls perror.
  */
-void start(unsigned int port);
+void start(unsigned short port);
 
 #endif /* WEBTEST_H_SENTRY */

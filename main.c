@@ -21,30 +21,31 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <limits.h>
 
 #include "core/webtest_core.h"
 
 /**
- * @brief Converting a string to an unsigned integer.
+ * @brief Converting a string to an unsigned short.
  * 
  * @param str String representation of a number.
  * @param[out] num Conversion result.
  * 
- * @return 1 if success, 0 otherwise (num = 0).
+ * @return 1 if success, 0 otherwise.
  */
-static int str_to_uint(const char *str, unsigned int *num);
+static int str_to_ushrt(const char *str, unsigned short *num);
 
 int main(int argc, char **argv)
 {
 	enum { port_i = 1 }; /* index of port in argv */
-	unsigned int port;
+	unsigned short port;
 
 	if (argc != 2) {
 		fputs("Usage: webtest <listen_port>\n", stderr);
 		return EXIT_FAILURE;
 	}
 
-	if (!str_to_uint(argv[port_i], &port)) {
+	if (!str_to_ushrt(argv[port_i], &port)) {
 		fputs("Invalid port\n", stderr);
 		return EXIT_FAILURE;
 	}
@@ -52,19 +53,21 @@ int main(int argc, char **argv)
 	start(port);
 }
 
-static int str_to_uint(const char *str, unsigned int *num)
+static int str_to_ushrt(const char *str, unsigned short *num)
 {
 	char *endptr = NULL;
+	long tmp_num;
 
-	if (!str || !num) { return 0; }
+	if (!str || !num)  { return 0; }
+	if (str[0] == '-') { return 0; }
 
 	errno = 0;
 
-	*num = strtol(str, &endptr, 10);
-	if (errno == ERANGE || *endptr != '\0' || num < 0)
-	{
-		return 0;
-	}
+	tmp_num = strtol(str, &endptr, 10);
+	if (errno == ERANGE || *endptr != '\0') { return 0; }
 
+	if (tmp_num > USHRT_MAX) { return 0; }
+
+	*num = tmp_num;
 	return 1;
 }

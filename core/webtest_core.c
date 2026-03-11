@@ -45,7 +45,7 @@ static int client_count; /**< Active client counter */
  * 
  * @return fd if success, -1 otherwise.
  */
-static int create_listen_socket(unsigned int port, err_t *err);
+static int create_listen_socket(unsigned short port, err_t *err);
 
 /**
  * @brief Handling HTTP client request.
@@ -63,7 +63,7 @@ static void client_handle(int sockfd, err_t *err);
  */
 static void signal_handle(int signal);
 
-void start(unsigned int port)
+void start(unsigned short port)
 {
 	int lsock, sfd;
 	struct sockaddr_in client_addr;
@@ -102,7 +102,7 @@ void start(unsigned int port)
 	}
 }
 
-static int create_listen_socket(unsigned int port, err_t *err)
+static int create_listen_socket(unsigned short port, err_t *err)
 {
 	int lsock;
 	int res, optval = 1;
