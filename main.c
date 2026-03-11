@@ -20,7 +20,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <signal.h>
 #include <errno.h>
 
 #include "core/webtest_core.h"
@@ -47,11 +46,6 @@ int main(int argc, char **argv)
 
 	if (!str_to_uint(argv[port_i], &port)) {
 		fputs("Invalid port\n", stderr);
-		return EXIT_FAILURE;
-	}
-
-	if (signal(SIGCHLD, SIG_IGN) == SIG_ERR) {
-		perror("signal");
 		return EXIT_FAILURE;
 	}
 

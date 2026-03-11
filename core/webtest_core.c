@@ -24,12 +24,16 @@
 #include <netinet/in.h>
 #include <stdio.h>
 #include <errno.h>
+#include <sys/wait.h>
 
 #include "webtest_core.h"
 #include "../http/http.h"
 #include "../error.h"
 
-#define REQUEST_SIZE	1025 
+#define MAX_REQUEST_SIZE	1024
+#define MAX_CLIENT_COUNT	10
+
+static int client_count; /**< Active client counter */
 
 /**
  * @brief Creating a listening socket.
@@ -51,22 +55,39 @@ static int create_listen_socket(unsigned int port, err_t *err);
  */
 static void client_handle(int sockfd, err_t *err);
 
+/**
+ * @brief Hanling SIGCHLD.
+ * 
+ * @param signal Signal number.
+ * @note After the child process is completed, the client_count is decremented.
+ */
+static void signal_handle(int signal);
+
 void start(unsigned int port)
 {
 	int lsock, sfd;
 	struct sockaddr_in client_addr;
 	socklen_t client_len = sizeof(client_addr);
+	struct sigaction sa;
 	err_t err;
 	pid_t pid;
 
 	lsock = create_listen_socket(port, &err);
 	if (lsock == -1) { err_report(&err); return; }
 
+    sa.sa_handler = &signal_handle;
+    sa.sa_flags = 0;
+    sigaction(SIGCHLD, &sa, NULL);
+
 	for (;;) {
 		sfd = accept(lsock, (struct sockaddr *) &client_addr, &client_len);
 		if (sfd == -1) { perror("accept"); continue; }
 
+		if (client_count >= MAX_CLIENT_COUNT) { continue; }
+
 		pid = fork();
+		if (pid != -1) { client_count++; }
+
 		if (pid == 0) {
 			close(lsock);
 
@@ -128,13 +149,13 @@ static void client_handle(int sockfd, err_t *err)
 	start_line.path = NULL;
 	start_line.version = NULL;
 
-	read_buff = calloc(REQUEST_SIZE, sizeof(char));
+	read_buff = calloc(MAX_REQUEST_SIZE + 1, sizeof(char));
 	if (!read_buff) {
 		err_set(err, errno, "malloc");
 		goto cleanup;
 	}
 
-	res = read(sockfd, read_buff, REQUEST_SIZE - 1);
+	res = read(sockfd, read_buff, MAX_REQUEST_SIZE);
 	if (res == -1) {
 		err_set(err, errno, "read");
 		goto cleanup;
@@ -154,4 +175,10 @@ static void client_handle(int sockfd, err_t *err)
 		free(start_line.method);
 		free(start_line.path);
 		free(start_line.version);
+}
+
+static void signal_handle(int signal)
+{
+	int stat;
+	while (waitpid(-1, &stat, WNOHANG) > 0) { client_count--; }
 }
