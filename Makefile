@@ -8,19 +8,16 @@ OBJDIR = obj
 
 TARGET = $(BINDIR)/webtest
 
-VPATH = common	\
-		core	\
+VPATH = core	\
 		http
 
 SOURCES = main.c			\
 		  webtest_core.c	\
-		  http.c			\
-		  common.c
+		  http.c
 		  
 HEADERS = webtest_core.h	\
 		  http.h			\
-		  index.html.h		\
-		  common.h
+		  index.html.h
 
 OBJECTS = $(patsubst %.c, $(OBJDIR)/%.o, $(SOURCES))
 

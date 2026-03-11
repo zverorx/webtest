@@ -23,10 +23,10 @@
 #include <string.h>
 #include <netinet/in.h>
 #include <errno.h>
+#include <stdio.h>
 
 #include "webtest_core.h"
 #include "../http/http.h"
-#include "../common/common.h"
 
 #define REQUEST_SIZE	1025 
 
@@ -71,13 +71,13 @@ void start(unsigned int port)
 		pid = fork();
 		if (pid == 0) {
 			close(lsock);
-			sleep(5);
 			client_handle(sfd, &err);
 			if (err.has_error) {
 				errno = err.errnum;
 				perror(err.funcname);
 			}
 
+			close(sfd);
 			return;
 		}
 		
@@ -142,6 +142,10 @@ static void client_handle(int sockfd, err_t *err)
 	char *read_buff = NULL;
 	stline_t start_line;
 
+	start_line.method = NULL;
+	start_line.path = NULL;
+	start_line.version = NULL;
+
 	if (err) { memset(err, 0, sizeof(err_t)); }
 
 	read_buff = calloc(REQUEST_SIZE, sizeof(char));
@@ -174,7 +178,8 @@ static void client_handle(int sockfd, err_t *err)
 	else { send_code_stat(sockfd, 400); }
 
 cleanup:
-	close_all(1, sockfd);
-	free_all(4, read_buff, start_line.method, 
-				start_line.path, start_line.version);
+	free(read_buff);
+	free(start_line.method);
+	free(start_line.path);
+	free(start_line.version);
 }

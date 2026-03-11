@@ -21,9 +21,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <errno.h>
 
 #include "core/webtest_core.h"
-#include "common/common.h"
+
+/**
+ * @brief Converting a string to an unsigned integer.
+ * 
+ * @param str String representation of a number.
+ * @param[out] num Conversion result.
+ * 
+ * @return 1 if success, 0 otherwise (num = 0).
+ */
+static int str_to_uint(const char *str, unsigned int *num);
 
 int main(int argc, char **argv)
 {
@@ -42,8 +52,25 @@ int main(int argc, char **argv)
 
 	if (signal(SIGCHLD, SIG_IGN) == SIG_ERR) {
 		perror("signal");
-		return;
+		return EXIT_FAILURE;
 	}
 
 	start(port);
+}
+
+static int str_to_uint(const char *str, unsigned int *num)
+{
+	char *endptr = NULL;
+
+	if (!str || !num) { return 0; }
+
+	errno = 0;
+
+	*num = strtol(str, &endptr, 10);
+	if (errno == ERANGE || *endptr != '\0' || num < 0)
+	{
+		return 0;
+	}
+
+	return 1;
 }
