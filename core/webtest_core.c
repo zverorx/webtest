@@ -22,19 +22,14 @@
 #include <unistd.h>
 #include <string.h>
 #include <netinet/in.h>
-#include <errno.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include "webtest_core.h"
 #include "../http/http.h"
+#include "../error.h"
 
 #define REQUEST_SIZE	1025 
-
-typedef struct error {
-	int has_error;
-	int errnum;
-	char funcname[16];
-} err_t;
 
 /**
  * @brief Creating a listening socket.
@@ -42,11 +37,18 @@ typedef struct error {
  * Backlog argument is 16.
  * 
  * @param port Port for the socket address (host order).
- * @param[out] err Reason for the error.
+ * @param[out] err Error status container.
  * 
  * @return fd if success, -1 otherwise.
  */
 static int create_listen_socket(unsigned int port, err_t *err);
+
+/**
+ * @brief Handling HTTP client request.
+ * 
+ * @param sockfd Client socket descriptor.
+ * @param[out] err Error status container.
+ */
 static void client_handle(int sockfd, err_t *err);
 
 void start(unsigned int port)
@@ -58,11 +60,7 @@ void start(unsigned int port)
 	pid_t pid;
 
 	lsock = create_listen_socket(port, &err);
-	if (lsock == -1) {
-		errno = err.errnum;
-		perror(err.funcname);
-		return;
-	}
+	if (lsock == -1) { err_report(&err); return; }
 
 	for (;;) {
 		sfd = accept(lsock, (struct sockaddr *) &client_addr, &client_len);
@@ -71,11 +69,9 @@ void start(unsigned int port)
 		pid = fork();
 		if (pid == 0) {
 			close(lsock);
+
 			client_handle(sfd, &err);
-			if (err.has_error) {
-				errno = err.errnum;
-				perror(err.funcname);
-			}
+			if (err.has_error) { err_report(&err); }
 
 			close(sfd);
 			return;
@@ -91,15 +87,9 @@ static int create_listen_socket(unsigned int port, err_t *err)
 	int res, optval = 1;
 	struct sockaddr_in lsn_addr;
 
-	if (err) { memset(err, 0, sizeof(err_t)); }
-
 	lsock = socket(AF_INET, SOCK_STREAM, 0);
 	if (lsock == -1) {
-		if (err) {
-			err->has_error = 1;
-			err->errnum = errno;
-			strncpy(err->funcname, "socket", sizeof(err->funcname) - 1);
-		}
+		err_set(err, errno, "socket");
 		goto handle_error;
 	}
 
@@ -111,21 +101,13 @@ static int create_listen_socket(unsigned int port, err_t *err)
 
 	res = bind(lsock, (struct sockaddr *) &lsn_addr, sizeof(lsn_addr));
 	if (res == -1) {
-		if (err) {
-			err->has_error = 1;
-			err->errnum = errno;
-			strncpy(err->funcname, "bind", sizeof(err->funcname) - 1);
-		}
+		err_set(err, errno, "bind");
 		goto handle_error;
 	}
 
 	res = listen(lsock, 16);
 	if (res == -1) {
-		if (err) {
-			err->has_error = 1;
-			err->errnum = errno;
-			strncpy(err->funcname, "listen", sizeof(err->funcname) - 1);
-		}
+		err_set(err, errno, "listen");
 		goto handle_error;
 	}
 
@@ -146,25 +128,15 @@ static void client_handle(int sockfd, err_t *err)
 	start_line.path = NULL;
 	start_line.version = NULL;
 
-	if (err) { memset(err, 0, sizeof(err_t)); }
-
 	read_buff = calloc(REQUEST_SIZE, sizeof(char));
 	if (!read_buff) {
-		if (err) {
-			err->has_error = 1;
-			err->errnum = errno;
-			strncpy(err->funcname, "malloc", sizeof(err->funcname) - 1);
-		}
+		err_set(err, errno, "malloc");
 		goto cleanup;
 	}
 
 	res = read(sockfd, read_buff, REQUEST_SIZE - 1);
 	if (res == -1) {
-		if (err) {
-			err->has_error = 1;
-			err->errnum = errno;
-			strncpy(err->funcname, "read", sizeof(err->funcname) - 1);
-		}
+		err_set(err, errno, "read");
 		goto cleanup;
 	}
 	read_buff[res] = '\0';
@@ -177,9 +149,9 @@ static void client_handle(int sockfd, err_t *err)
 	}
 	else { send_code_stat(sockfd, 400); }
 
-cleanup:
-	free(read_buff);
-	free(start_line.method);
-	free(start_line.path);
-	free(start_line.version);
+	cleanup:
+		free(read_buff);
+		free(start_line.method);
+		free(start_line.path);
+		free(start_line.version);
 }

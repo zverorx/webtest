@@ -17,6 +17,7 @@ SOURCES = main.c			\
 		  
 HEADERS = webtest_core.h	\
 		  http.h			\
+		  error.h			\
 		  index.html.h
 
 OBJECTS = $(patsubst %.c, $(OBJDIR)/%.o, $(SOURCES))
