@@ -27,7 +27,7 @@ ifeq ($(BUILD), debug)
 	CFLAGS += -Wall -g
 else
 	ifeq ($(BUILD), release)
-		CFLAGS += -O2
+		CFLAGS += -O2 -s
 	endif
 endif
 
