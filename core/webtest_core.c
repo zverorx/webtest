@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <netinet/in.h>
+#include <errno.h>
 
 #include "webtest_core.h"
 #include "../http/http.h"
@@ -29,10 +30,11 @@
 
 #define REQUEST_SIZE	1025 
 
-/**
- * @see create_listen_socket
- */
-enum error_t { socket_err, bind_err, listen_err };
+typedef struct error {
+	int has_error;
+	int errnum;
+	char funcname[16];
+} err_t;
 
 /**
  * @brief Creating a listening socket.
@@ -44,59 +46,60 @@ enum error_t { socket_err, bind_err, listen_err };
  * 
  * @return fd if success, -1 otherwise.
  */
-static int create_listen_socket(unsigned int port, enum error_t *err);
+static int create_listen_socket(unsigned int port, err_t *err);
+static void client_handle(int sockfd, err_t *err);
 
 void start(unsigned int port)
 {
-	int lsock, sfd = -1, res;
+	int lsock, sfd;
 	struct sockaddr_in client_addr;
 	socklen_t client_len = sizeof(client_addr);
-	stline_t start_line;
-	enum error_t err;
-	char *read_buff = NULL;
+	err_t err;
+	pid_t pid;
 
 	lsock = create_listen_socket(port, &err);
 	if (lsock == -1) {
-		if (err == socket_err) { perror("socket"); return; }
-		if (err == bind_err)   { perror("bind");   return; }
-		if (err == listen_err) { perror("listen"); return; }
+		errno = err.errnum;
+		perror(err.funcname);
+		return;
 	}
 
 	for (;;) {
 		sfd = accept(lsock, (struct sockaddr *) &client_addr, &client_len);
-		CHECK("accept", sfd, cleanup);
+		if (sfd == -1) { perror("accept"); continue; }
 
-		read_buff = calloc(REQUEST_SIZE, sizeof(char));
-		if (!read_buff) { CHECK("calloc", -1, cleanup); }
-
-		res = read(sfd, read_buff, REQUEST_SIZE - 1);
-		CHECK("read", res, cleanup);
-		read_buff[res] = '\0';
-
-		if (http_parse(read_buff, &start_line)) {
-			if (!strcmp(start_line.method, "GET")) {
-				httpget(sfd, start_line.path);
+		pid = fork();
+		if (pid == 0) {
+			close(lsock);
+			sleep(5);
+			client_handle(sfd, &err);
+			if (err.has_error) {
+				errno = err.errnum;
+				perror(err.funcname);
 			}
-			else { send_code_stat(sfd, 501); }
-		}
-		else { send_code_stat(sfd, 400); }
 
-cleanup:
-		close_all(1, sfd);
-		free_all(4, read_buff, start_line.method, 
-		     	 start_line.path, start_line.version);
+			return;
+		}
+		
+		close(sfd);
 	}
 }
 
-static int create_listen_socket(unsigned int port, enum error_t *err)
+static int create_listen_socket(unsigned int port, err_t *err)
 {
 	int lsock;
 	int res, optval = 1;
 	struct sockaddr_in lsn_addr;
 
+	if (err) { memset(err, 0, sizeof(err_t)); }
+
 	lsock = socket(AF_INET, SOCK_STREAM, 0);
 	if (lsock == -1) {
-		if (err) { *err = socket_err; }
+		if (err) {
+			err->has_error = 1;
+			err->errnum = errno;
+			strncpy(err->funcname, "socket", sizeof(err->funcname) - 1);
+		}
 		goto handle_error;
 	}
 
@@ -108,13 +111,21 @@ static int create_listen_socket(unsigned int port, enum error_t *err)
 
 	res = bind(lsock, (struct sockaddr *) &lsn_addr, sizeof(lsn_addr));
 	if (res == -1) {
-		if (err) { *err = bind_err; }
+		if (err) {
+			err->has_error = 1;
+			err->errnum = errno;
+			strncpy(err->funcname, "bind", sizeof(err->funcname) - 1);
+		}
 		goto handle_error;
 	}
 
 	res = listen(lsock, 16);
 	if (res == -1) {
-		if (err) { *err = listen_err; }
+		if (err) {
+			err->has_error = 1;
+			err->errnum = errno;
+			strncpy(err->funcname, "listen", sizeof(err->funcname) - 1);
+		}
 		goto handle_error;
 	}
 
@@ -123,4 +134,47 @@ static int create_listen_socket(unsigned int port, enum error_t *err)
 	handle_error:
 		if (lsock != -1) { close(lsock); }
 		return -1;
+}
+
+static void client_handle(int sockfd, err_t *err)
+{
+	int res;
+	char *read_buff = NULL;
+	stline_t start_line;
+
+	if (err) { memset(err, 0, sizeof(err_t)); }
+
+	read_buff = calloc(REQUEST_SIZE, sizeof(char));
+	if (!read_buff) {
+		if (err) {
+			err->has_error = 1;
+			err->errnum = errno;
+			strncpy(err->funcname, "malloc", sizeof(err->funcname) - 1);
+		}
+		goto cleanup;
+	}
+
+	res = read(sockfd, read_buff, REQUEST_SIZE - 1);
+	if (res == -1) {
+		if (err) {
+			err->has_error = 1;
+			err->errnum = errno;
+			strncpy(err->funcname, "read", sizeof(err->funcname) - 1);
+		}
+		goto cleanup;
+	}
+	read_buff[res] = '\0';
+
+	if (http_parse(read_buff, &start_line)) {
+		if (!strcmp(start_line.method, "GET")) {
+			httpget(sockfd, start_line.path);
+		}
+		else { send_code_stat(sockfd, 501); }
+	}
+	else { send_code_stat(sockfd, 400); }
+
+cleanup:
+	close_all(1, sockfd);
+	free_all(4, read_buff, start_line.method, 
+				start_line.path, start_line.version);
 }
