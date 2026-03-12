@@ -2,6 +2,8 @@
 
 HTTP test server for measuring download speed.
 
+>WARNING: If you download a large file, do not output its contents to stdout, and do not open it in a text editor, this may cause freezes.
+
 ## Compilation
 
 Go to the source directory, and run:
