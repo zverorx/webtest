@@ -25,7 +25,7 @@ The executable file will be in the bin/ directory.
 time curl http://host:port/<size><B|K|M|G> > /dev/null
 ```
 
-**Limits: file size 0B–10G, max 10 parallel clients.**
+**Limits: file size 0B–50G, max 10 parallel clients.**
 
 ## License
 

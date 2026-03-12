@@ -18,7 +18,7 @@
     "<pre>time curl http://192.168.1.2:8080/10M &gt; /dev/null</pre>"\
 \
     "<h2>Size limits</h2>"\
-    "<p>Min: 0B <br> Max: 10G</p>"\
+    "<p>Min: 0B <br> Max: 50G</p>"\
 \
     "<h2>Try it right now</h2>"\
     "<strong>Warning: Don't open after download (large files may freeze)</strong>"\

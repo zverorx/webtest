@@ -134,7 +134,7 @@ int send_headers(int sockfd, const char *type, size_t len)
 
 int httpget(int sockfd, const char *path)
 {
-	enum { buff_size = 1024, upper_limit = 10737418240 };
+	enum { buff_size = 1024, upper_limit = 53687091200 };
 	int res = -1, code_stat;
 	size_t junk_size = 0;
 	char buff[buff_size];
