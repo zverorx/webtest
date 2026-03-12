@@ -22,7 +22,7 @@
 #define WEBTEST_H_SENTRY
 
 /**
- * @brief Starting the server.
+ * @brief Starts the server.
  * 
  * @param port Port for the listening socket (host order).
  * @note It calls perror.

@@ -26,7 +26,7 @@
 #include "core/webtest_core.h"
 
 /**
- * @brief Converting a string to an unsigned short.
+ * @brief Converts a string to an unsigned short.
  * 
  * @param str String representation of a number.
  * @param[out] num Conversion result.

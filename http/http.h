@@ -32,7 +32,7 @@ typedef struct request_start_line {
 } stline_t;
 
 /**
- * @brief Parsing the start line of an HTTP request.
+ * @brief Parses the start line of an HTTP request.
  * 
  * @param request Request from client.
  * @param[out] stline Start line store.
@@ -41,7 +41,7 @@ typedef struct request_start_line {
 int http_parse(const char *request, stline_t *stline);
 
 /**
- * @brief Sending status code to the client.
+ * @brief Sends status code to the client.
  * 
  * @param sockfd Write socket.
  * @param code Status code.
@@ -52,7 +52,7 @@ int http_parse(const char *request, stline_t *stline);
 int send_code_stat(int sockfd, int code);
 
 /**
- * @brief Sending HTTP headers to the client.
+ * @brief Sends HTTP headers to the client.
  * 
  * @param sockfd Write socket.
  * @param type Content-Type value.
@@ -62,7 +62,7 @@ int send_code_stat(int sockfd, int code);
 int send_headers(int sockfd, const char *type, size_t len);
 
 /**
- * @brief Processing HTTP GET request.
+ * @brief Processes HTTP GET request.
  * 
  * @param sockfd Client socket.
  * @param path Request path.
@@ -71,7 +71,7 @@ int send_headers(int sockfd, const char *type, size_t len);
 int httpget(int sockfd, const char *path);
 
 /**
- * @brief Parsing path string to extract garbage size.
+ * @brief Parses path string to extract garbage size.
  * 
  * Expected format: /[0-9]+[BKMG]:
  * 
