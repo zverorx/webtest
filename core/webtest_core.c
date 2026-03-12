@@ -2,7 +2,7 @@
  * This file is part of webtest.
  * webtest - web server for speed testing.
  *
- * Copyright (C) 2025 Egorov Konstantin
+ * Copyright (C) 2026 Egorov Konstantin
  *
  * webtest is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
