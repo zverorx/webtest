@@ -47,7 +47,7 @@ int http_parse(const char *request, stline_t *stline);
  * @param code Status code.
  * @return Writing result or -2 if the message for the code is not implemented.
  * 
- * @note Support codes: 200, 400, 404, 501.
+ * @note Support codes: 200, 400, 404, 422, 501.
  */
 int send_code_stat(int sockfd, int code);
 
@@ -59,11 +59,26 @@ int send_code_stat(int sockfd, int code);
  * @param len Content-Length value.
  * @return Writing result or -2 if invalid arguments.
  */
-int send_headers(int sockfd, const char *type, int len);
+int send_headers(int sockfd, const char *type, size_t len);
 
 /**
+ * @brief Processing HTTP GET request.
  * 
+ * @param sockfd Client socket.
+ * @param path Request path.
+ * @return Last write result, or -1 on error.
  */
 int httpget(int sockfd, const char *path);
+
+/**
+ * @brief Parsing path string to extract garbage size.
+ * 
+ * Expected format: /[0-9]+[BKMG]:
+ * 
+ * @param path Path string to parse (e.g., "/42K")
+ * @param[out] code_stat HTTP status code (200 if success).
+ * @return Size in bytes, or 0 if parsing failed.
+ */
+size_t path_parse(const char *path, int *code_stat);
 
 #endif /* HTTP_H_SENTRY */
