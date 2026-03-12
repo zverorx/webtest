@@ -2,6 +2,8 @@
 
 HTTP test server for measuring download speed.
 
+Generate files of arbitrary size by specifying the desired size in the URL.
+
 >WARNING: If you download a large file, do not output its contents to stdout, and do not open it in a text editor, this may cause freezes.
 
 ## Compilation
